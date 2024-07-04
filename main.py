@@ -1,6 +1,7 @@
 from typing import Dict
 
 import httpx
+import uvicorn
 
 from fastapi import FastAPI, HTTPException
 from geopy.distance import geodesic
@@ -9,7 +10,7 @@ from pydantic import BaseModel
 # BaseModel -> def modèle données avec des type sstricts
 # A la réception requête, FastAPI utilise ce modèle pr valid auto données requête entrante
 
-from app import utils
+from app.utils import load_coverage_data
 
 app = FastAPI()
 # FastAPI() = 1 classe fourni / framework FastAPI -> En appelant FastAPI() -> création d'une instance de cette classe, ce qui
@@ -24,7 +25,7 @@ app = FastAPI()
 # Cette place au niveau global -> ttes routes & config ajoutées ensuite se réfèrent à cette instance
 
 
-network_coverage_data = utils.load_coverage_data('./Sites_mobiles_2G_3G_4G_France.csv')
+network_coverage_data = load_coverage_data('data/Sites_mobiles_2G_3G_4G_France.csv')
 # = appelé une seule fois lors du démrrage application
 # import module utils qui contient la fction
 # cette fction lit le fichier CSV et retourn données
@@ -136,3 +137,5 @@ async def get_coverage_endpoint_response(request: AdressRequest):
 # ≠ opérations synch, où pgm attend que ch instruction st terminée avt de passer à la suivante, les opérations asynch perm à d'autres parties du pgm de s'exécut pendant qu'elles sont en cours
 # Await permet de récupér les résult d'une opération asynchr. Permet de gérer la réponse de l'opération asynch une fois qu'elle est complète
 
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
