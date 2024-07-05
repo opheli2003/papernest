@@ -24,11 +24,10 @@ renting.
 * To test the API
     1. Go to Postman
     2. Send a POST request on '/coverage'
-    3. The body of the request is this form:
+    3. The body of the request is this form:     
        {
-       "addresses": {
-       "id1": "157 boulevard Mac Donald 75019 Paris",
-       "id2": "6 rue Montgallet 75012 Paris"}
+       "addresses": {"id1": "157 boulevard Mac Donald 75019 Paris",
+                     "id2": "6 rue Montgallet 75012 Paris"}
        }
    4. You'll get the network coverage results for each address
    
