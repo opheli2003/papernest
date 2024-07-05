@@ -10,10 +10,9 @@ def test_lambert93_to_gps():
 
 
 def test_load_coverage_data(tmp_path):
-    temp_dir = tmp_path / "test_datas_dir"
-    temp_file = temp_dir / "coverage_datas.csv"
+    temp_file = tmp_path / "coverage_datas.csv"
     temp_file.write_text("Operateur,x,y,2G,3G,4G\nOrange,67000,55100,1,0,1\n")
-    data = load_coverage_data(temp_file)
+    data = load_coverage_data(str(temp_file))
     assert not data.empty
     assert "lon" in data.columns
     assert "lat" in data.columns
