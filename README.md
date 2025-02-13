@@ -13,11 +13,15 @@ renting.
 ### Set environnment
 
 * Create a python env &rarr; python -m venv <name_of_virtual_env>
-* Install the requirements &rarr; pip install requirements.txt
+* Install the requirements &rarr; pip install -r requirements.txt
 
 ### Run server
 
-* To run the server &rarr; uvicorn main:app --reload
+* To run the server &rarr; uvicorn main:app
+
+## Endpoints
+- `GET /` → Health check*
+- `POST /coverage` → Get network coverage
 
 ### Query
 
@@ -29,8 +33,12 @@ renting.
        "addresses": {"id1": "157 boulevard Mac Donald 75019 Paris",
                      "id2": "6 rue Montgallet 75012 Paris"}
        }
-   4. You'll get the network coverage results for each address
-   
+    4. You'll get the network coverage results for each address:
+       {
+       "id1": {"Orange": {"2G": true, "3G": false, "4G": true}},
+       "id2": {"SFR": {"2G": false, "3G": false, "4G": true}}
+        }
+
 ### Test
 
 * To launch the tests &rarr; pytest tests/test_utils.py

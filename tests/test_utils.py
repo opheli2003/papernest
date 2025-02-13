@@ -7,6 +7,7 @@ def test_lambert93_to_gps():
     lon, lat = lambert93_to_gps(x, y)
     assert isinstance(lon, float)
     assert not isinstance(lat, int)
+    assert lon is not None and lat is not None
 
 
 def test_load_coverage_data(tmp_path):
@@ -16,3 +17,4 @@ def test_load_coverage_data(tmp_path):
     assert not data.empty
     assert "lon" in data.columns
     assert "lat" in data.columns
+    assert "Operateur" in data.columns

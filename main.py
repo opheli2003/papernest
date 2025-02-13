@@ -1,39 +1,64 @@
-from typing import Dict, Tuple
+
+
+import logging
+import os
 
 import httpx
 import pandas as pd
 import uvicorn
-
 from fastapi import FastAPI, HTTPException
 from geopy.distance import geodesic
 from pydantic import BaseModel
+
 from app.utils import load_coverage_data
 
-app = FastAPI()
+logging.basicConfig(level=logging.INFO)
 
-network_coverage_data = load_coverage_data('data/Sites_mobiles_2G_3G_4G_France.csv')
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
+csv_path = "data/Sites_mobiles_TEST.csv"
+
+if not os.path.exists(csv_path):
+    raise FileNotFoundError("CSV file NOT found!")
+
+try:
+    network_coverage_data = load_coverage_data(csv_path)
+    logging.info(f"CSV loaded successfully! Shape: {network_coverage_data.shape}")
+except Exception as e:
+    logging.error(f"Error reading CSV: {e}")
+
+app = FastAPI()
 
 
 class AddressRequest(BaseModel):
 
-    addresses: Dict[str, str]
+    addresses: dict[str, str]
 
 
 client = httpx.AsyncClient()
 
 
-async def fetch_address_to_coordinates(address: str) -> Tuple[float, float]:
-    response = await client.get(f'https://api-adresse.data.gouv.fr/search/?q={address}')
-    if response.status_code != 200:
-        raise HTTPException(status_code=400, detail=f"Can't get coordinates for address {address}")
-    data = response.json()
-    if not data['features']:
-        raise HTTPException(status_code=404, detail=f"No coordinates found for address {address}")
-    coordinates = data['features'][0]['geometry']['coordinates']
-    return coordinates[0], coordinates[1]
+async def fetch_address_to_coordinates(address: str):
+    """Fetch GPS coordinates for a given address."""
+    logging.info(f"Fetching coordinates for address: {address}")
+    try:
+        response = await client.get(f'https://api-adresse.data.gouv.fr/search/?q={address}')
+        response.raise_for_status()
+        data = response.json()
+        if not data['features']:
+            return None
+        coordinates = data['features'][0]['geometry']['coordinates']
+        return coordinates[0], coordinates[1]
+    except Exception as err:
+        logging.error(f"Unexpected error fetching {address}: {err}")
+        return None
 
 
-def check_coverage(lon: float, lat: float, dataframe: pd.DataFrame) -> Dict[str, Dict[str, bool]]:
+def check_coverage(lon: float, lat: float, dataframe: pd.DataFrame) -> dict[str, dict[str, bool]]:
+    """Check if an address is covered by 2G, 3G, 4G networks"""
     coverage_result = {}
     for index, row in dataframe.iterrows():
         operator = row['Operateur']
@@ -51,23 +76,31 @@ def check_coverage(lon: float, lat: float, dataframe: pd.DataFrame) -> Dict[str,
     return coverage_result
 
 
-async def get_coverage_datas(request: AddressRequest) -> Dict[str, Dict[str, bool]]:
+async def get_coverage_datas(request: AddressRequest) -> dict[str, dict[str, str] | dict[str, dict[str, bool]]]:
+    """Process coverage requests"""
     results = {}
     for address_id, address in request.addresses.items():
         lon, lat = await fetch_address_to_coordinates(address)
+        if lon is None or lat is None:
+            results[address_id] = {"error": "Could not retrieve coordinates"}
+            continue
         results[address_id] = check_coverage(lon, lat, network_coverage_data)
     return results
 
 
 @app.get("/")
-async def start_endpoint() -> Dict[str, str]:
-    return {"message": "Welcome to the Network Coverage API"}
+async def root():
+    return {"message": "Welcome to Network Coverage API!"}
 
 
 @app.post("/coverage")
-async def get_coverage_endpoint_response(request: AddressRequest) -> Dict[str, Dict[str, bool]]:
-    return await get_coverage_datas(request)
+async def get_coverage_endpoint_response(request: AddressRequest):
+    try:
+        return await get_coverage_datas(request)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
