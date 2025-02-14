@@ -20,7 +20,7 @@ renting.
 * To run the server &rarr; uvicorn main:app
 
 ## Endpoints
-- `GET /` → Health check*
+- `GET /` → Health check
 - `POST /coverage` → Get network coverage
 
 ### Query
